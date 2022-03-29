@@ -14,6 +14,7 @@ const partnerRouter = require('./routes/partnerRouter');
 
 
 const mongoose = require('mongoose');
+const user = require('./models/user');
 
 const url = 'mongodb://localhost:27017/nucampsite';
 const connect = mongoose.connect(url, {
@@ -44,6 +45,8 @@ app.use(session({
   resave: false,
   store: new FileStore()
 }));
+app.use('/', indexRouter);
+app.use('/users', usersRouter);
 // cant use cookie parser with express cookies.
 // app.use(cookieParser('12345-67890-09876-54321'));
 /* middleware are applied in order so its crucial
@@ -53,43 +56,28 @@ function auth(req, res, next) {
     console.log(req.session);
 
     if (!req.session.user) {
-      const authHeader = req.headers.authorization;
-      if (!authHeader) {
           const err = new Error('You are not authenticated!');
-          res.setHeader('WWW-Authenticate', 'Basic');
           err.status = 401;
           return next(err);
-      }
-        // from() decodes user and password from authorization header
-        const auth = Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
-        const user = auth[0];
-        const pass = auth[1];
-        if (user === 'admin' && pass === 'password') {
-          req.session.user = 'admin';
-          return next(); // authorized
-        } else {
-          const err = new Error('You are not authenticated!');
-          res.setHeader('WWW-Authenticate', 'Basic');
-          err.status = 401;
-          return next(err);
-      }
-    } else {
-        if (req.session.user === 'admin') {
+    }  else {
+        if (req.session.user === 'authenticated') {
             return next();
         } else {
             const err = new Error('You are not authenticated!');
             err.status = 401;
             return next(err);
         }
+        // from() decodes user and password from authorization header
+      }
+    
     }
-}
+
 
 app.use(auth);
 
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/users', usersRouter);
 app.use('/campsites', campsiteRouter);
 app.use('/promotions', promotionRouter);
 app.use('/partners', partnerRouter);
